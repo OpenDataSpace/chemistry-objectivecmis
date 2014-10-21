@@ -186,6 +186,59 @@
     }];
 }
 
+- (CMISRequest*)retrieveCheckedOutDocumentsWithCompletionBlock:(void (^)(CMISPagedResult *result, NSError *error))completionBlock
+{
+    return [self retrieveCheckedOutDocumentsWithOperationContext:[CMISOperationContext defaultOperationContext] completionBlock:completionBlock];
+}
+
+- (CMISRequest*)retrieveCheckedOutDocumentsWithOperationContext:(CMISOperationContext *)operationContext
+                                                completionBlock:(void (^)(CMISPagedResult *result, NSError *error))completionBlock
+{
+    CMISRequest *request = [[CMISRequest alloc] init];
+    CMISFetchNextPageBlock fetchNextPageBlock = ^(int skipCount, int maxItems, CMISFetchNextPageBlockCompletionBlock pageBlockCompletionBlock)
+    {
+        // Fetch results through navigationService
+        CMISRequest * checkedoutRequest = [self.binding.navigationService retrieveCheckedOutDocumentsInFolder:nil
+                                                                                 orderBy:operationContext.orderBy
+                                                                                  filter:operationContext.filterString
+                                                                           relationships:operationContext.relationships
+                                                                         renditionFilter:operationContext.renditionFilterString
+                                                                 includeAllowableActions:operationContext.includeAllowableActions
+                                                                               skipCount:[NSNumber numberWithInt:skipCount]
+                                                                                maxItems:[NSNumber numberWithInt:maxItems]
+                                                                         completionBlock:^(CMISObjectList *objectList, NSError *error) {
+                                                                             if (error) {
+                                                                                 pageBlockCompletionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeConnection]);
+                                                                             } else {
+                                                                                 CMISFetchNextPageBlockResult *result = [[CMISFetchNextPageBlockResult alloc] init];
+                                                                                 result.hasMoreItems = objectList.hasMoreItems;
+                                                                                 result.numItems = objectList.numItems;
+                                                                                 
+                                                                                 [self.objectConverter convertObjects:objectList.objects
+                                                                                                      completionBlock:^(NSArray *objects, NSError *error) {
+                                                                                                          result.resultArray = objects;
+                                                                                                          pageBlockCompletionBlock(result, error);
+                                                                                                      }];
+                                                                             }
+                                                                         }];
+        
+        // set the underlying request object on the object returned to the original caller
+        request.httpRequest = checkedoutRequest.httpRequest;
+    };
+    
+    [CMISPagedResult pagedResultUsingFetchBlock:fetchNextPageBlock
+                                limitToMaxItems:operationContext.maxItemsPerPage
+                             startFromSkipCount:operationContext.skipCount
+                                completionBlock:^(CMISPagedResult *result, NSError *error) {
+                                    if (error) {
+                                        completionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeRuntime]);
+                                    } else {
+                                        completionBlock(result, nil);
+                                    }
+                                }];
+    return request;
+}
+
 - (CMISRequest*)retrieveObject:(NSString *)objectId completionBlock:(void (^)(CMISObject *object, NSError *error))completionBlock
 {
     return [self retrieveObject:objectId operationContext:[CMISOperationContext defaultOperationContext] completionBlock:completionBlock];
@@ -206,7 +259,7 @@
                                                filter:operationContext.filterString
                                         relationships:operationContext.relationships
                                      includePolicyIds:operationContext.includePolicies
-                                      renditionFilder:operationContext.renditionFilterString
+                                      renditionFilter:operationContext.renditionFilterString
                                            includeACL:operationContext.includeACLs
                               includeAllowableActions:operationContext.includeAllowableActions
                                       completionBlock:^(CMISObjectData *objectData, NSError *error) {
@@ -239,7 +292,7 @@
                                               filter:operationContext.filterString
                                        relationships:operationContext.relationships
                                     includePolicyIds:operationContext.includePolicies
-                                     renditionFilder:operationContext.renditionFilterString
+                                     renditionFilter:operationContext.renditionFilterString
                                           includeACL:operationContext.includeACLs
                              includeAllowableActions:operationContext.includeAllowableActions
                                      completionBlock:^(CMISObjectData *objectData, NSError *error) {
@@ -255,6 +308,45 @@
                                              completionBlock(nil, error);
                                          }
                                      }];
+}
+
+- (CMISRequest*)retrieveDocumentOfLatestVersion:(NSString *)objectId completionBlock:(void (^)(CMISDocument *document, NSError *error))completionBlock
+{
+    return [self retrieveDocumentOfLatestVersion:objectId
+                                operationContext:[CMISOperationContext defaultOperationContext]
+                                 completionBlock:completionBlock];
+}
+
+- (CMISRequest*)retrieveDocumentOfLatestVersion:(NSString *)objectId operationContext:(CMISOperationContext*)operationContext completionBlock:(void (^)(CMISDocument *document, NSError *error))completionBlock
+{
+    return [self retrieveDocumentOfLatestVersion:objectId
+                                operationContext:operationContext
+                                           major:NO completionBlock:completionBlock];
+}
+
+- (CMISRequest*)retrieveDocumentOfLatestVersion:(NSString *)objectId operationContext:(CMISOperationContext*)operationContext major:(BOOL)major completionBlock:(void (^)(CMISDocument *document, NSError *error))completionBlock
+{
+    return [self.binding.versioningService retrieveObjectOfLatestVersion:objectId
+                                                                   major:major
+                                                                  filter:operationContext.filterString
+                                                           relationships:operationContext.relationships
+                                                        includePolicyIds:operationContext.includePolicies
+                                                         renditionFilter:operationContext.renditionFilterString
+                                                              includeACL:operationContext.includeACLs
+                                                 includeAllowableActions:operationContext.includeAllowableActions
+                                                         completionBlock:^(CMISObjectData *objectData, NSError *error) {
+                                                             if (objectData != nil && error == nil) {
+                                                                 [self.objectConverter convertObject:objectData
+                                                                                     completionBlock:^(CMISObject *object, NSError *error) {
+                                                                                         completionBlock((CMISDocument*)object, error);
+                                                                                     }];
+                                                             } else {
+                                                                 if (error == nil) {
+                                                                     error = [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeObjectNotFound];
+                                                                 }
+                                                                 completionBlock(nil, error);
+                                                             }
+                                                         }];
 }
 
 - (CMISRequest*)retrieveTypeDefinition:(NSString *)typeId completionBlock:(void (^)(CMISTypeDefinition *typeDefinition, NSError *error))completionBlock
