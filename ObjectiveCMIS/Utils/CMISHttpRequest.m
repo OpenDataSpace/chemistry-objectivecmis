@@ -22,6 +22,7 @@
 #import "CMISErrors.h"
 #import "CMISLog.h"
 #import "CMISReachability.h"
+#import "CMISConstants.h"
 
 //Exception names as returned in the <!--exception> tag
 NSString * const kCMISExceptionInvalidArgument         = @"invalidArgument";
@@ -43,17 +44,17 @@ NSString * const kCMISExceptionVersioning              = @"versioning";
 
 
 + (id)startRequest:(NSMutableURLRequest *)urlRequest
-                      httpMethod:(CMISHttpRequestMethod)httpRequestMethod
-                     requestBody:(NSData*)requestBody
-                         headers:(NSDictionary*)additionalHeaders
-          authenticationProvider:(id<CMISAuthenticationProvider>) authenticationProvider
-                 completionBlock:(void (^)(CMISHttpResponse *httpResponse, NSError *error))completionBlock
+        httpMethod:(CMISHttpRequestMethod)httpRequestMethod
+       requestBody:(NSData*)requestBody
+           headers:(NSDictionary*)additionalHeaders
+           session:(CMISBindingSession *)session
+   completionBlock:(void (^)(CMISHttpResponse *httpResponse, NSError *error))completionBlock
 {
     CMISHttpRequest *httpRequest = [[self alloc] initWithHttpMethod:httpRequestMethod
                                                     completionBlock:completionBlock];
     httpRequest.requestBody = requestBody;
     httpRequest.additionalHeaders = additionalHeaders;
-    httpRequest.authenticationProvider = authenticationProvider;
+    httpRequest.session = session;
     
     if (![httpRequest startRequest:urlRequest]) {
         httpRequest = nil;
@@ -77,8 +78,19 @@ NSString * const kCMISExceptionVersioning              = @"versioning";
 
 - (BOOL)startRequest:(NSMutableURLRequest*)urlRequest
 {
+    // check network reachability (unless it's disabled) and return early if appropriate
+    id checkNetworkReachability = [self.session objectForKey:kCMISSessionParameterCheckNetworkReachability];
+    if (!checkNetworkReachability || [checkNetworkReachability boolValue]) {
+        CMISReachability *reachability = [CMISReachability networkReachability];
+        if (!reachability.hasNetworkConnection) {
+            NSError *noConnectionError = [CMISErrors createCMISErrorWithCode:kCMISErrorCodeNoNetworkConnection detailedDescription:kCMISErrorDescriptionNoNetworkConnection];
+            [self URLSession:self.urlSession task:self.sessionTask didCompleteWithError:noConnectionError];
+            return NO;
+        }
+    }
+    
     BOOL startedRequest = NO;
-
+    
     if (self.requestBody) {
         if ([CMISLog sharedInstance].logLevel == CMISLogLevelTrace) {
             CMISLogTrace(@"Request body: %@", [[NSString alloc] initWithData:self.requestBody encoding:NSUTF8StringEncoding]);
@@ -87,7 +99,7 @@ NSString * const kCMISExceptionVersioning              = @"versioning";
         [urlRequest setHTTPBody:self.requestBody];
     }
     
-    [self.authenticationProvider.httpHeadersToApply enumerateKeysAndObjectsUsingBlock:^(NSString *headerName, NSString *header, BOOL *stop) {
+    [self.session.authenticationProvider.httpHeadersToApply enumerateKeysAndObjectsUsingBlock:^(NSString *headerName, NSString *header, BOOL *stop) {
         [urlRequest addValue:header forHTTPHeaderField:headerName];
         if ([CMISLog sharedInstance].logLevel == CMISLogLevelTrace) {
             CMISLogTrace(@"Added header: %@ with value: %@", headerName, header);
@@ -101,20 +113,39 @@ NSString * const kCMISExceptionVersioning              = @"versioning";
         }
     }];
     
-    self.connection = [[NSURLConnection alloc] initWithRequest:urlRequest delegate:self startImmediately:NO];
-    CMISReachability *reachability = [CMISReachability networkReachability];
-    
-    if (self.connection && reachability.hasNetworkConnection) {
-        [self.connection scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
-        [self.connection start];
-        startedRequest = YES;
-    } else if (!reachability.hasNetworkConnection) {
-        NSError *noConnectionError = [CMISErrors createCMISErrorWithCode:kCMISErrorCodeNoNetworkConnection detailedDescription:kCMISErrorDescriptionNoNetworkConnection];
-        [self connection:self.connection didFailWithError:noConnectionError];
+    // determine the type of session configuration to create
+    NSURLSessionConfiguration *sessionConfiguration = nil;
+    id useBackgroundSession = [self.session objectForKey:kCMISSessionParameterUseBackgroundNetworkSession];
+    if (useBackgroundSession && [useBackgroundSession boolValue]) {
+        // get session and container identifiers from session
+        NSString *backgroundId = [self.session objectForKey:kCMISSessionParameterBackgroundNetworkSessionId
+                                               defaultValue:kCMISDefaultBackgroundNetworkSessionId];
+        NSString *containerId = [self.session objectForKey:kCMISSessionParameterBackgroundNetworkSessionSharedContainerId
+                                              defaultValue:kCMISDefaultBackgroundNetworkSessionSharedContainerId];
+        
+        // use the background session configuration, cache settings and timeout will be provided by the request object
+        sessionConfiguration = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:backgroundId];
+        sessionConfiguration.sharedContainerIdentifier = containerId;
+        
+        CMISLogDebug(@"Using background network session with identifier '%@' and shared container '%@'",
+                     backgroundId, containerId);
     }
     else {
+        // use the default session configuration, cache settings and timeout will be provided by the request object
+        sessionConfiguration = [NSURLSessionConfiguration defaultSessionConfiguration];
+    }
+    
+    // create session and task
+    self.urlSession = [NSURLSession sessionWithConfiguration:sessionConfiguration delegate:self delegateQueue:nil];
+    self.sessionTask = [self taskForRequest:urlRequest];
+    
+    if (self.sessionTask) {
+        // start the task
+        [self.sessionTask resume];
+        startedRequest = YES;
+    } else {
         if (self.completionBlock) {
-            NSString *detailedDescription = [NSString stringWithFormat:@"Could not create connection to %@", urlRequest.URL];
+            NSString *detailedDescription = [NSString stringWithFormat:@"Could not create network session for %@", urlRequest.URL];
             NSError *cmisError = [CMISErrors createCMISErrorWithCode:kCMISErrorCodeConnection detailedDescription:detailedDescription];
             self.completionBlock(nil, cmisError);
         }
@@ -123,96 +154,89 @@ NSString * const kCMISExceptionVersioning              = @"versioning";
     return startedRequest;
 }
 
+- (NSURLSessionTask *)taskForRequest:(NSURLRequest *)request
+{
+    return [self.urlSession dataTaskWithRequest:request];
+}
+
+#pragma mark CMISCancellableRequest method
+
 - (void)cancel
 {
-    if (self.connection) {
+    if (self.urlSession) {
         void (^completionBlock)(CMISHttpResponse *httpResponse, NSError *error);
         completionBlock = self.completionBlock; // remember completion block in order to invoke it after the connection was cancelled
         
-        self.completionBlock = nil; // prevent potential NSURLConnection delegate callbacks to invoke the completion block redundantly
+        self.completionBlock = nil; // prevent potential NSURLSession delegate callbacks to invoke the completion block redundantly
         
-        [self.connection cancel];
+        [self.urlSession invalidateAndCancel];
         
-        self.connection = nil;
+        self.urlSession = nil;
         
         NSError *cmisError = [CMISErrors createCMISErrorWithCode:kCMISErrorCodeCancelled detailedDescription:@"Request was cancelled"];
         completionBlock(nil, cmisError);
     }
 }
 
+#pragma mark Session delegate methods
 
-- (BOOL)connection:(NSURLConnection *)connection canAuthenticateAgainstProtectionSpace:(NSURLProtectionSpace *)protectionSpace
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
 {
-    return [self.authenticationProvider canAuthenticateAgainstProtectionSpace:protectionSpace];
+    [self.session.authenticationProvider updateWithHttpURLResponse:self.response];
+
+    if (self.completionBlock) {
+        
+        NSError *cmisError = nil;
+        CMISHttpResponse *httpResponse = nil;
+        
+        if (error) {
+            CMISErrorCodes cmisErrorCode = kCMISErrorCodeConnection;
+            
+            // swap error code if necessary
+            if (error.code == NSURLErrorCancelled) {
+                cmisErrorCode = kCMISErrorCodeCancelled;
+            } else if (error.code == kCMISErrorCodeNoNetworkConnection) {
+                cmisErrorCode = kCMISErrorCodeNoNetworkConnection;
+            }
+            
+            cmisError = [CMISErrors cmisError:error cmisErrorCode:cmisErrorCode];
+        } else {
+            // no error returned but we also need to check response code
+            httpResponse = [CMISHttpResponse responseUsingURLHTTPResponse:self.response data:self.responseBody];
+            if (![self checkStatusCodeForResponse:httpResponse httpRequestMethod:self.requestMethod error:&cmisError]) {
+                httpResponse = nil;
+            }
+        }
+        
+        // call the completion block on the main thread
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.completionBlock(httpResponse, cmisError);
+        });
+    }
+    
+    // clean up
+    self.sessionTask = nil;
+    self.urlSession = nil;
 }
 
-
-- (void)connection:(NSURLConnection *)connection didCancelAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
 {
-    [self.authenticationProvider didCancelAuthenticationChallenge:challenge];
+    [self.responseBody appendData:data];
 }
 
-
-- (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
-{
-    [self.authenticationProvider didReceiveAuthenticationChallenge:challenge];
-}
-
-
-- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler
 {
     self.responseBody = [[NSMutableData alloc] init];
     if ([response isKindOfClass:NSHTTPURLResponse.class]) {
         self.response = (NSHTTPURLResponse*)response;
     }
+    
+    completionHandler(NSURLSessionResponseAllow);
 }
 
-
-- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
+- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
 {
-    [self.responseBody appendData:data];
-}
-
-
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
-{
-    [self.authenticationProvider updateWithHttpURLResponse:self.response];
-
-    if (self.completionBlock) {
-        CMISErrorCodes cmisErrorCode = kCMISErrorCodeConnection;
-        
-        // swap error code if necessary
-        if (error.code == NSURLErrorCancelled) {
-            cmisErrorCode = kCMISErrorCodeCancelled;
-        } else if (error.code == kCMISErrorCodeNoNetworkConnection) {
-            cmisErrorCode = kCMISErrorCodeNoNetworkConnection;
-        }
-        
-        NSError *cmisError = [CMISErrors cmisError:error cmisErrorCode:cmisErrorCode];
-        self.completionBlock(nil, cmisError);
-    }
-    
-    self.completionBlock = nil;
-    self.connection = nil;
-}
-
-
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection
-{
-    [self.authenticationProvider updateWithHttpURLResponse:self.response];
-    
-    if (self.completionBlock) {
-        NSError *cmisError = nil;
-        CMISHttpResponse *httpResponse = [CMISHttpResponse responseUsingURLHTTPResponse:self.response data:self.responseBody];
-        if ([self checkStatusCodeForResponse:httpResponse httpRequestMethod:self.requestMethod error:&cmisError]) {
-            self.completionBlock(httpResponse, nil);
-        } else {
-            self.completionBlock(nil, cmisError);
-        }
-    }
-    
-    self.completionBlock = nil;
-    self.connection = nil;
+    [self.session.authenticationProvider didReceiveChallenge:challenge completionHandler:completionHandler];
 }
 
 - (BOOL)checkStatusCodeForResponse:(CMISHttpResponse *)response httpRequestMethod:(CMISHttpRequestMethod)httpRequestMethod error:(NSError **)error
