@@ -87,6 +87,7 @@ const NSUInteger kRawBufferSize = 24576;
 @property (nonatomic, copy) void (^progressBlock)(unsigned long long bytesUploaded, unsigned long long bytesTotal);
 @property (nonatomic, assign) BOOL useCombinedInputStream;
 @property (nonatomic, assign) BOOL base64Encoding;
+@property (nonatomic, assign) BOOL transferCompleted;
 @property (nonatomic, strong) NSInputStream *combinedInputStream;
 @property (nonatomic, strong) NSOutputStream *encoderStream;
 @property (nonatomic, strong) NSData *streamStartData;
@@ -170,6 +171,7 @@ const NSUInteger kRawBufferSize = 24576;
                      completionBlock:completionBlock];
     if (self) {
         _progressBlock = progressBlock;
+        _transferCompleted = NO;
     }
     return self;
 }
@@ -205,6 +207,9 @@ const NSUInteger kRawBufferSize = 24576;
 
 - (void)cancel
 {
+    if (self.transferCompleted) {
+        return;
+    }
     self.progressBlock = nil;
     
     [super cancel];
@@ -258,9 +263,21 @@ const NSUInteger kRawBufferSize = 24576;
         }
         
         if (self.bytesExpected == 0) {
-            self.progressBlock((unsigned long long)totalBytesSent, (unsigned long long)totalBytesExpectedToSend);
+            if (totalBytesSent >= totalBytesExpectedToSend) {
+                self.transferCompleted = YES;
+            }
+            // pass progress to progressBlock, on the original thread
+            if (self.originalThread) {
+                [self performSelector:@selector(executeProgressBlock:) onThread:self.originalThread withObject:@[@(totalBytesSent), @(totalBytesExpectedToSend)] waitUntilDone:NO];
+            }
         } else {
-            self.progressBlock((unsigned long long)totalBytesSent, self.bytesExpected);
+            if (totalBytesSent >= self.bytesExpected) {
+                self.transferCompleted = YES;
+            }
+            // pass progress to progressBlock, on the original thread
+            if (self.originalThread) {
+                [self performSelector:@selector(executeProgressBlock:) onThread:self.originalThread withObject:@[@(totalBytesSent), @(self.bytesExpected)] waitUntilDone:NO];
+            }
         }
     }
 }
@@ -493,5 +510,10 @@ const NSUInteger kRawBufferSize = 24576;
     self.streamStartData = nil;
 }
 
+- (void)executeProgressBlock:(NSArray*)valueArray {
+    if (self.progressBlock) {
+        self.progressBlock([valueArray[0] unsignedLongLongValue], [valueArray[1] unsignedLongLongValue]);
+    }
+}
 
 @end
