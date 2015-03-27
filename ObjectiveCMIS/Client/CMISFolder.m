@@ -213,4 +213,9 @@
                                     unfileObjects:unfileObjects continueOnFailure:continueOnFailure completionBlock:completionBlock];
 }
 
+- (CMISRequest*)createLinkWithProperties:(CMISProperties *)properties completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock {
+    return [self.binding.objectService createLinkWithProperties:properties sourceFolderId:self.identifier completionBlock:completionBlock];
+}
+
+
 @end
