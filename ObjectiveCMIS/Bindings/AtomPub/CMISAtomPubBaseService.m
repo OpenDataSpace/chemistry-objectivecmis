@@ -90,7 +90,10 @@
                     repositoryFound = YES;
                     
                     // Cache collections
-                    [self.bindingSession setObject:[workspace collectionHrefForCollectionType:kCMISAtomCollectionQuery] forKey:kCMISAtomBindingSessionKeyQueryCollection];
+                    if ([workspace collectionHrefForCollectionType:kCMISAtomCollectionQuery]) {
+                        //ODS not support it at the moment
+                        [self.bindingSession setObject:[workspace collectionHrefForCollectionType:kCMISAtomCollectionQuery] forKey:kCMISAtomBindingSessionKeyQueryCollection];
+                    }
                     [self.bindingSession setObject:[workspace collectionHrefForCollectionType:kCMISAtomCollectionCheckedout] forKey:kCMISAtomBindingSessionKeyCheckedoutCollection];
                     
                     
@@ -104,7 +107,9 @@
                     CMISAtomPubTypeByIdUriBuilder *typeByIdUriBuilder = [[CMISAtomPubTypeByIdUriBuilder alloc] initWithTemplateUrl:workspace.typeByIdUriTemplate];
                     [self.bindingSession setObject:typeByIdUriBuilder forKey:kCMISAtomBindingSessionKeyTypeByIdUriBuilder];
                     
-                    [self.bindingSession setObject:workspace.queryUriTemplate forKey:kCMISAtomBindingSessionKeyQueryUri];
+                    if (workspace.queryUriTemplate) {  //ODS not support it at the moment
+                        [self.bindingSession setObject:workspace.queryUriTemplate forKey:kCMISAtomBindingSessionKeyQueryUri];
+                    }
                     
                     break;
                 }
