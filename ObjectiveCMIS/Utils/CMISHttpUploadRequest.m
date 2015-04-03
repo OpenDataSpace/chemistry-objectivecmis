@@ -254,6 +254,10 @@ const NSUInteger kRawBufferSize = 24576;
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didSendBodyData:(int64_t)bytesSent totalBytesSent:(int64_t)totalBytesSent totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend
 {
     if (self.progressBlock) {
+        if (totalBytesExpectedToSend == -1) {
+            //TODO: totalBytesExpectedToSend is always -1. we use bytesExpected instead.
+            totalBytesExpectedToSend = _bytesExpected;
+        }
         if (self.useCombinedInputStream && self.base64Encoding) {
             // Show the actual transmitted raw data size to the user, not the base64 encoded size
             totalBytesSent = [CMISHttpUploadRequest rawEncodedLength:totalBytesSent];
