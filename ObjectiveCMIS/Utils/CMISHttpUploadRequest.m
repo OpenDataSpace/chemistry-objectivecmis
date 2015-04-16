@@ -264,6 +264,7 @@ const NSUInteger kRawBufferSize = 24576;
             if (totalBytesSent > totalBytesExpectedToSend) {
                 totalBytesSent = totalBytesExpectedToSend;
             }
+            totalBytesExpectedToSend = [CMISHttpUploadRequest rawEncodedLength:totalBytesExpectedToSend];
         }
         
         if (self.bytesExpected == 0) {
@@ -280,7 +281,7 @@ const NSUInteger kRawBufferSize = 24576;
             }
             // pass progress to progressBlock, on the original thread
             if (self.originalThread) {
-                [self performSelector:@selector(executeProgressBlock:) onThread:self.originalThread withObject:@[@(totalBytesSent), @(self.bytesExpected)] waitUntilDone:NO];
+                [self performSelector:@selector(executeProgressBlock:) onThread:self.originalThread withObject:@[@(totalBytesSent), @(totalBytesExpectedToSend)] waitUntilDone:NO];
             }
         }
     }
