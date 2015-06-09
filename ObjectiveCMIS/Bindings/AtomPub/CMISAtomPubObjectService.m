@@ -789,7 +789,7 @@
     return cmisRequest;
 }
 
-- (CMISRequest*) createLinkWithProperties:(CMISProperties*) properties
+- (CMISRequest*) createItemWithProperties:(CMISProperties*) properties
                            sourceFolderId:(NSString*) sourceFolderId
                           completionBlock:(void (^)(NSString* objectId, NSError *error))completionBlock {
     // Validate params
@@ -826,5 +826,46 @@
     return request;
 }
 
+/**
+ * create relationship of the given object.
+ * completionBlock returns NSError nil if successful
+ */
+- (CMISRequest*) createRelationshipWithProperties:(CMISProperties*) properties
+                                   sourceFolderId:(NSString*) sourceFolderId
+                                  completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock {
+    // Validate params
+    if (!properties) {
+        CMISLogError(@"Must provide link properties");
+        completionBlock(nil, [CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument detailedDescription:nil]);
+        return nil;
+    }
+    
+    CMISRequest *request = [[CMISRequest alloc] init];
+    
+    // find the down links
+    [self loadLinkForObjectId:sourceFolderId
+                     relation:kCMISLinkRelationShips
+                         type:kCMISMediaTypeChildren
+                  cmisRequest:request
+              completionBlock:^(NSString *link, NSError *error) {
+                  if (!link) {
+                      completionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeRuntime]);
+                  }else {
+                      [self sendAtomEntryXmlToLink:link
+                                 httpRequestMethod:HTTP_POST
+                                        properties:properties
+                                       cmisRequest:request
+                                   completionBlock:^(CMISObjectData *objectData, NSError *error){
+                                       if (error) {
+                                           completionBlock(nil, error);
+                                       }else {
+                                           completionBlock(objectData.identifier, nil);
+                                       }
+                                   }];
+                  }
+              }];
+    
+    return request;
+}
 
 @end

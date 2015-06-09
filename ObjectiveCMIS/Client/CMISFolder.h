@@ -92,11 +92,18 @@
                         completionBlock:(void (^)(NSArray *failedObjects, NSError *error))completionBlock;
 
 /**
- * creates a link for an object with specified properties
+ * creates an item for an object with specified properties
  *
  */
-- (CMISRequest*)createLinkWithProperties:(CMISProperties *)properties completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
+- (CMISRequest*)createItemWithProperties:(CMISProperties *)properties
+                         completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
 
+/**
+ * creates an relationship between two object with specified properties
+ *
+ */
+- (CMISRequest*)createRelationshipWithProperties:(CMISProperties *)properties
+                                 completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
 @end
 
 

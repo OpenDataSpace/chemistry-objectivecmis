@@ -248,11 +248,19 @@
                    completionBlock:(void (^)(NSArray *renditions, NSError *error))completionBlock;
 
 /**
- * create link of the given object.
+ * create an item of the given object.
  * completionBlock returns NSError nil if successful
  */
-- (CMISRequest*) createLinkWithProperties:(CMISProperties*) properties
+- (CMISRequest*) createItemWithProperties:(CMISProperties*) properties
                            sourceFolderId:(NSString*) sourceFolderId
                           completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
+
+/**
+ * create relationship of the given object.
+ * completionBlock returns NSError nil if successful
+ */
+- (CMISRequest*) createRelationshipWithProperties:(CMISProperties*) properties
+                                   sourceFolderId:(NSString*) sourceFolderId
+                                  completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
 
 @end

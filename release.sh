@@ -46,9 +46,9 @@ mkdir release-pack/src
 cp NOTICE release-pack
 cp LICENSE release-pack
 cp README release-pack
-rsync -a --exclude='.*' ObjectiveCMIS release-pack/src
-rsync -a --exclude='.*' ObjectiveCMIS.xcodeproj release-pack/src
-rsync -a --exclude='.*' ObjectiveCMISTests release-pack/src
+rsync -v -a --exclude='.*' ObjectiveCMIS release-pack/src
+rsync -v -a --exclude='.*' ObjectiveCMIS.xcodeproj release-pack/src
+rsync -v -a --exclude='.*' ObjectiveCMISTests release-pack/src
 
 cd release-pack
 

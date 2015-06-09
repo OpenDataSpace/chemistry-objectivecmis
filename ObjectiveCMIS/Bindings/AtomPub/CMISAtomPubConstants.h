@@ -79,6 +79,7 @@ extern NSString * const kCMISLinkRelationDown;
 extern NSString * const kCMISLinkRelationUp;
 extern NSString * const kCMISLinkRelationSelf;
 extern NSString * const kCMISLinkRelationFolderTree;
+extern NSString * const kCMISLinkRelationShips;
 extern NSString * const kCMISLinkVersionHistory;
 extern NSString * const kCMISLinkEditMedia;
 extern NSString * const kCMISLinkRelationNext;

@@ -47,6 +47,4 @@
                       toFolderWithId:(NSString *)targetFolderId
                      completionBlock:(void (^)(CMISObject *object, NSError *error))completionBlock;
 
-
-
 @end

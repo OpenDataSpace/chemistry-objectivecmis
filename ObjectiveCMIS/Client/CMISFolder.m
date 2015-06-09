@@ -213,9 +213,21 @@
                                     unfileObjects:unfileObjects continueOnFailure:continueOnFailure completionBlock:completionBlock];
 }
 
-- (CMISRequest*)createLinkWithProperties:(CMISProperties *)properties completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock {
-    return [self.binding.objectService createLinkWithProperties:properties sourceFolderId:self.identifier completionBlock:completionBlock];
+- (CMISRequest*)createItemWithProperties:(CMISProperties *)properties
+                         completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock {
+    return [self.binding.objectService createItemWithProperties:properties
+                                                 sourceFolderId:self.identifier
+                                                completionBlock:completionBlock];
 }
 
+/**
+ * creates an relationship between two object with specified properties
+ *
+ */
+- (CMISRequest*)createRelationshipWithProperties:(CMISProperties *)properties
+                                 completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock {
+    return [self.binding.objectService createRelationshipWithProperties:properties
+                                                         sourceFolderId:self.identifier completionBlock:completionBlock];
+}
 
 @end
