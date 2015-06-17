@@ -27,6 +27,7 @@ NSString * const kCMISAtomBindingSessionKeyTypeByIdUriBuilder = @"cmis_session_k
 NSString * const kCMISAtomBindingSessionKeyQueryUri = @"cmis_session_key_atom_query_uri";
 NSString * const kCMISAtomBindingSessionKeyQueryCollection = @"cmis_session_key_atom_query_collection";
 NSString * const kCMISAtomBindingSessionKeyCheckedoutCollection = @"cmis_session_key_atom_checkedout_collection";
+NSString * const kCMISAtomBindingSessionKeyUnfiledCollection = @"cmis_session_key_atom_unfiled_collection";
 NSString * const kCMISAtomBindingSessionKeyLinkCache = @"cmis_session_key_atom_link_cache";
 
 // Feed
@@ -66,6 +67,7 @@ NSString * const kCMISAtomEntryDirect = @"direct";
 // Collections
 NSString * const kCMISAtomCollectionQuery = @"query";
 NSString * const kCMISAtomCollectionCheckedout = @"checkedout";
+NSString * const kCMISAtomCollectionUnfiled = @"unfiled";
 
 // Media Types
 NSString * const kCMISMediaTypeFeed = @"application/atom+xml;type=feed";

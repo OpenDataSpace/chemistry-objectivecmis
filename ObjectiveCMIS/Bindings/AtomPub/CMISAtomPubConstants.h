@@ -27,6 +27,7 @@ extern NSString * const kCMISAtomBindingSessionKeyTypeByIdUriBuilder;
 extern NSString * const kCMISAtomBindingSessionKeyQueryUri;
 extern NSString * const kCMISAtomBindingSessionKeyQueryCollection;
 extern NSString * const kCMISAtomBindingSessionKeyCheckedoutCollection;
+extern NSString * const kCMISAtomBindingSessionKeyUnfiledCollection;
 extern NSString * const kCMISAtomBindingSessionKeyLinkCache;
 
 // Feed
@@ -66,6 +67,7 @@ extern NSString * const kCMISAtomEntryDirect;
 // Collections
 extern NSString * const kCMISAtomCollectionQuery;
 extern NSString * const kCMISAtomCollectionCheckedout;
+extern NSString * const kCMISAtomCollectionUnfiled;
 
 // Media Types
 extern NSString * const kCMISMediaTypeFeed;

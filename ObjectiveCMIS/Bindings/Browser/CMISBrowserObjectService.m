@@ -734,7 +734,7 @@
     }
     
     // build URL
-    NSString *objectUrl = [self retrieveObjectUrlForObjectWithId:sourceFolderId];
+    NSString *objectUrl = [self retrieveRepositoryUrl];//[self retrieveObjectUrlForObjectWithId:sourceFolderId];
     
     // prepare form data
     CMISBroswerFormDataWriter *formData = [[CMISBroswerFormDataWriter alloc] initWithAction:kCMISBrowserJSONActionCreateItem];
@@ -783,7 +783,7 @@
     }
     
     // build URL
-    NSString *objectUrl = [self retrieveObjectUrlForObjectWithId:sourceFolderId];
+    NSString *objectUrl = [self retrieveRepositoryUrl];//[self retrieveObjectUrlForObjectWithId:sourceFolderId];
     
     // prepare form data
     CMISBroswerFormDataWriter *formData = [[CMISBroswerFormDataWriter alloc] initWithAction:kCMISBrowserJSONActionCreateRelationship];

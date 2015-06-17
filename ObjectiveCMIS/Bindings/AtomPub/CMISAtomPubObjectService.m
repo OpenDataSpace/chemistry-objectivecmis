@@ -798,30 +798,27 @@
         completionBlock(nil, [CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument detailedDescription:nil]);
         return nil;
     }
+    
+    NSString *unfiledLink = [self.bindingSession objectForKey:kCMISAtomBindingSessionKeyUnfiledCollection];
+    if (unfiledLink == nil) {
+        CMISLogDebug(@"Unfiled not supported!");
+        completionBlock(nil, [CMISErrors createCMISErrorWithCode:kCMISErrorCodeNotSupported detailedDescription:nil]);
+        return nil;
+    }
+    
     CMISRequest *request = [[CMISRequest alloc] init];
     
-    // find the down links
-    [self loadLinkForObjectId:sourceFolderId
-                     relation:kCMISLinkRelationDown
-                         type:kCMISMediaTypeChildren
-                  cmisRequest:request
-              completionBlock:^(NSString *link, NSError *error) {
-                  if (!link) {
-                      completionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeRuntime]);
-                  }else {
-                      [self sendAtomEntryXmlToLink:link
-                                 httpRequestMethod:HTTP_POST
-                                        properties:properties
-                                       cmisRequest:request
-                                   completionBlock:^(CMISObjectData *objectData, NSError *error){
-                                       if (error) {
-                                           completionBlock(nil, error);
-                                       }else {
-                                           completionBlock(objectData.identifier, nil);
-                                       }
-                                   }];
-                  }
-              }];
+    [self sendAtomEntryXmlToLink:unfiledLink
+             httpRequestMethod:HTTP_POST
+                    properties:properties
+                   cmisRequest:request
+               completionBlock:^(CMISObjectData *objectData, NSError *error){
+                   if (error) {
+                       completionBlock(nil, error);
+                   }else {
+                       completionBlock(objectData.identifier, nil);
+                   }
+               }];
     
     return request;
 }
