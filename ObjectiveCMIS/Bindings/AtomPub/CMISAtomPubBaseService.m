@@ -96,6 +96,7 @@
                     }
                     [self.bindingSession setObject:[workspace collectionHrefForCollectionType:kCMISAtomCollectionCheckedout] forKey:kCMISAtomBindingSessionKeyCheckedoutCollection];
                     
+                    [self.bindingSession setObject:[workspace collectionHrefForCollectionType:kCMISAtomCollectionUnfiled] forKey:kCMISAtomBindingSessionKeyUnfiledCollection];
                     
                     // Cache uri's and uri templates
                     CMISAtomPubObjectByIdUriBuilder *objectByIdUriBuilder = [[CMISAtomPubObjectByIdUriBuilder alloc] initWithTemplateUrl:workspace.objectByIdUriTemplate];

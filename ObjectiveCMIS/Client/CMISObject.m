@@ -26,7 +26,7 @@
 #import "CMISRenditionData.h"
 #import "CMISRendition.h"
 #import "CMISLog.h"
-
+#import "CMISRelationship.h"
 
 @interface CMISObject ()
 
@@ -46,6 +46,7 @@
 @property (nonatomic, strong, readwrite) CMISAllowableActions *allowableActions;
 @property (nonatomic, strong, readwrite) CMISAcl *acl;
 @property (nonatomic, strong, readwrite) NSArray *renditions;
+@property (nonatomic, strong, readwrite) NSArray *relationships;
 
 @property (nonatomic, strong) NSMutableDictionary *extensionsDict;
 
@@ -88,6 +89,15 @@
                 [renditions addObject:[[CMISRendition alloc] initWithRenditionData:renditionData objectId:self.identifier session:session]];
             }
             self.renditions = renditions;
+        }
+        
+        //Relationship must be converted here, because they need access to the session to get link information
+        if (objectData.relationships) {
+            NSMutableArray *relationships = [NSMutableArray array];
+            for (CMISObjectData *relationshipData in objectData.relationships) {
+                [relationships addObject:[[CMISRelationship alloc] initWithObjectData:relationshipData session:session]];
+            }
+            self.relationships = relationships;
         }
     }
     
@@ -160,6 +170,17 @@
     // TODO Need to implement the following extension levels CMISExtensionLevelAcl, CMISExtensionLevelPolicies, CMISExtensionLevelChangeEvent
     
     return [self.extensionsDict objectForKey:[NSNumber numberWithInteger:extensionLevel]];
+}
+
+/**
+ * creates an relationship between two object with specified properties
+ *
+ */
+- (CMISRequest*)createRelationshipWithProperties:(CMISProperties *)properties
+                                 completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock {
+    return [self.binding.objectService createRelationshipWithProperties:properties
+                                                         sourceFolderId:self.identifier
+                                                        completionBlock:completionBlock];
 }
 
 @end

@@ -43,6 +43,7 @@
 @property (nonatomic, strong, readonly) CMISAcl *acl;
 @property (nonatomic, strong, readonly) CMISAllowableActions *allowableActions;
 @property (nonatomic, strong, readonly) NSArray *renditions; // An array containing CMISRendition objects
+@property (nonatomic, strong, readonly) NSArray *relationships; //An array containing CMISRelationship objects
 
 @property (nonatomic, strong, readonly) CMISProperties *properties;
 
@@ -67,6 +68,13 @@
  * Returns the extensions for the given level as an array 
  */
 - (NSArray *)extensionsForExtensionLevel:(CMISExtensionLevel)extensionLevel;
+
+/**
+ * creates an relationship between two object with specified properties
+ *
+ */
+- (CMISRequest*)createRelationshipWithProperties:(CMISProperties *)properties
+                                 completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
 
 @end
 

@@ -98,12 +98,6 @@
 - (CMISRequest*)createItemWithProperties:(CMISProperties *)properties
                          completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
 
-/**
- * creates an relationship between two object with specified properties
- *
- */
-- (CMISRequest*)createRelationshipWithProperties:(CMISProperties *)properties
-                                 completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
 @end
 
 
