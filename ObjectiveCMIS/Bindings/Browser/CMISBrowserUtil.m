@@ -280,7 +280,7 @@ NSString * const kCMISBrowserMaxValueECMJSONProperty = @"\"maxValue\":1797693134
     }
 }
 
-+ (void)objectListFromJSONData:(NSData *)jsonData typeCache:(CMISBrowserTypeCache *)typeCache isQueryResult:(BOOL)isQueryResult completionBlock:(void(^)(CMISObjectList *objectList, NSError *error))completionBlock
++ (void)objectListFromDescendantsJSONData:(NSData *)jsonData typeCache:(CMISBrowserTypeCache *)typeCache isQueryResult:(BOOL)isQueryResult completionBlock:(void(^)(CMISObjectList *objectList, NSError *error))completionBlock
 {
     // TODO: error handling i.e. if jsonData is nil, also handle outError being nil
     
@@ -302,6 +302,60 @@ NSString * const kCMISBrowserMaxValueECMJSONProperty = @"\"maxValue\":1797693134
             objectList.hasMoreItems = NO;
             objectList.numItems = (int)[allObjects count];
             objectsArray = allObjects;
+        } else { // is NSDictionary
+            if (isQueryResult) {
+                objectsArray = [jsonDictionary cmis_objectForKeyNotNull:kCMISBrowserJSONResults];
+            } else {
+                objectsArray = [jsonDictionary cmis_objectForKeyNotNull:kCMISBrowserJSONObjects];
+            }
+            // retrieve the paging data
+            objectList.hasMoreItems = [jsonDictionary cmis_boolForKey:kCMISBrowserJSONHasMoreItems];
+            objectList.numItems = [jsonDictionary cmis_intForKey:kCMISBrowserJSONNumberItems];
+        }
+        
+        [CMISBrowserUtil convertObjects:objectsArray typeCache:typeCache completionBlock:^(NSArray *objects, NSError *error) {
+            if (error){
+                completionBlock(nil, error);
+            } else {
+                // pass objects to list
+                objectList.objects = objects;
+                
+                // handle extension data
+                if([jsonDictionary isKindOfClass:NSDictionary.class]) {
+                    if (isQueryResult) {
+                        objectList.extensions = [CMISObjectConverter convertExtensions:jsonDictionary cmisKeys:[CMISBrowserConstants queryResultListKeys]];
+                    } else {
+                        objectList.extensions = [CMISObjectConverter convertExtensions:jsonDictionary cmisKeys:[CMISBrowserConstants objectListKeys]];
+                    }
+                }
+                completionBlock(objectList, nil);
+            }
+        }];
+    } else {
+        completionBlock(nil, [CMISErrors cmisError:serialisationError cmisErrorCode:kCMISErrorCodeRuntime]);
+    }
+}
+
++ (void)objectListFromJSONData:(NSData *)jsonData typeCache:(CMISBrowserTypeCache *)typeCache isQueryResult:(BOOL)isQueryResult completionBlock:(void(^)(CMISObjectList *objectList, NSError *error))completionBlock
+{
+    // TODO: error handling i.e. if jsonData is nil, also handle outError being nil
+    
+    // parse the JSON response
+    NSError *serialisationError = nil;
+    id jsonDictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&serialisationError];
+    
+    CMISObjectList *objectList = nil;
+    if (!serialisationError) {
+        // parse the json into a CMISObjectList object
+        objectList = [CMISObjectList new];
+        
+        // parse the objects
+        NSArray *objectsArray;
+        if ([jsonDictionary isKindOfClass:NSArray.class]) {
+            objectsArray = jsonDictionary;
+            
+            objectList.hasMoreItems = NO;
+            objectList.numItems = (int)objectsArray.count;
         } else { // is NSDictionary
             if (isQueryResult) {
                 objectsArray = [jsonDictionary cmis_objectForKeyNotNull:kCMISBrowserJSONResults];

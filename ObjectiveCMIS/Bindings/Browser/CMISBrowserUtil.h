@@ -42,6 +42,11 @@
 + (void)objectDataFromJSONData:(NSData *)jsonData typeCache:(CMISBrowserTypeCache *)typeCache completionBlock:(void(^)(CMISObjectData *objectData, NSError *error))completionBlock;
 
 /**
+ Returns a CMISObjectList object parsed from the given Descendants JSON data.
+ */
++ (void)objectListFromDescendantsJSONData:(NSData *)jsonData typeCache:(CMISBrowserTypeCache *)typeCache isQueryResult:(BOOL)isQueryResult completionBlock:(void(^)(CMISObjectList *objectList, NSError *error))completionBlock;
+
+/**
  Returns a CMISObjectList object parsed from the given JSON data.
  */
 + (void)objectListFromJSONData:(NSData *)jsonData typeCache:(CMISBrowserTypeCache *)typeCache isQueryResult:(BOOL)isQueryResult completionBlock:(void(^)(CMISObjectList *objectList, NSError *error))completionBlock;
