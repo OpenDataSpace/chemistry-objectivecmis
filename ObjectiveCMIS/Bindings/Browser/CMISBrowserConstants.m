@@ -99,6 +99,7 @@ NSString * const kCMISBrowserJSONRenditions = @"renditions";
 NSString * const kCMISBrowserJSONObjects = @"objects";
 NSString * const kCMISBrowserJSONResults = @"results";
 NSString * const kCMISBrowserJSONObject = @"object";
+NSString * const kCMISBrowserJSONChildren = @"children";
 NSString * const kCMISBrowserJSONHasMoreItems = @"hasMoreItems";
 NSString * const kCMISBrowserJSONNumberItems = @"numItems";
 NSString * const kCMISBrowserJSONChangeLogToken = @"changeLogToken";

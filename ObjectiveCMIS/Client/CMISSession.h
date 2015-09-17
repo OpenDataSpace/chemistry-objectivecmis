@@ -276,4 +276,11 @@
                         bytesExpected:(unsigned long long)bytesExpected
                       completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock
                         progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock;
+
+/**
+ *  delete a cmis object like link item or relationship.
+ *  completionBlock returns nil if successful
+ */
+- (CMISRequest*)deleteObjectWithId:(NSString*) objectId
+                   completionBlock:(void (^)(NSError *error)) completionBlock;
 @end

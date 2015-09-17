@@ -703,4 +703,20 @@
     return request;
 }
 
+/**
+ *  delete a cmis object like link item or relationship.
+ *  completionBlock returns nil if successful
+ */
+- (CMISRequest*)deleteObjectWithId:(NSString*) objectId
+                   completionBlock:(void (^)(NSError *error)) completionBlock {
+    CMISRequest *deleteRequest = [self.binding.objectService deleteObject:objectId allVersions:YES completionBlock:^(BOOL objectDeleted, NSError *error) {
+        if (objectDeleted) {
+            completionBlock(nil);
+        }else {
+            completionBlock(error);
+        }
+    }];
+    
+    return deleteRequest;
+}
 @end

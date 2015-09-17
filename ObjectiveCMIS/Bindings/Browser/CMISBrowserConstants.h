@@ -87,6 +87,7 @@ extern NSString * const kCMISBrowserJSONRenditions;
 extern NSString * const kCMISBrowserJSONObjects;
 extern NSString * const kCMISBrowserJSONResults;
 extern NSString * const kCMISBrowserJSONObject;
+extern NSString * const kCMISBrowserJSONChildren;
 extern NSString * const kCMISBrowserJSONHasMoreItems;
 extern NSString * const kCMISBrowserJSONNumberItems;
 extern NSString * const kCMISBrowserJSONThinClientUri;

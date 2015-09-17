@@ -253,6 +253,33 @@ NSString * const kCMISBrowserMaxValueECMJSONProperty = @"\"maxValue\":1797693134
     }
 }
 
+
+//to handle the children object for get folder tree
++ (void)convertObjectListFromArrar:(NSArray*) objectsArray withObjectList:(NSMutableArray*)outObjects {
+    if (objectsArray) {
+        for (id objectInfo in objectsArray) {
+            if ([objectInfo isKindOfClass:[NSArray class]]) {
+                [CMISBrowserUtil convertObjectListFromArrar:objectInfo withObjectList:outObjects];
+            } else {
+                NSArray *allKeys = [objectInfo allKeys];
+                if ([allKeys count] > 1) {
+                    NSMutableArray *children = [NSMutableArray new];
+                    for (NSString *key in allKeys) {
+                        if ([key isEqualToString:kCMISBrowserJSONObject]) {
+                            [outObjects addObject:[objectInfo objectForKey:key]];
+                        } else {
+                            [children addObject:[objectInfo objectForKey:key]];
+                        }
+                    }
+                    [CMISBrowserUtil convertObjectListFromArrar:children withObjectList:outObjects];
+                }else {
+                    [outObjects addObject:[objectInfo cmis_objectForKeyNotNull:kCMISBrowserJSONObject]];
+                }
+            }
+        }
+    }
+}
+
 + (void)objectListFromJSONData:(NSData *)jsonData typeCache:(CMISBrowserTypeCache *)typeCache isQueryResult:(BOOL)isQueryResult completionBlock:(void(^)(CMISObjectList *objectList, NSError *error))completionBlock
 {
     // TODO: error handling i.e. if jsonData is nil, also handle outError being nil
@@ -268,11 +295,13 @@ NSString * const kCMISBrowserMaxValueECMJSONProperty = @"\"maxValue\":1797693134
         
         // parse the objects
         NSArray *objectsArray;
-        if ([jsonDictionary isKindOfClass:NSArray.class]){
-            objectsArray = jsonDictionary;
+        if ([jsonDictionary isKindOfClass:NSArray.class]) {
+            NSMutableArray *allObjects = [NSMutableArray new];
+            [CMISBrowserUtil convertObjectListFromArrar:jsonDictionary withObjectList:allObjects];
             
             objectList.hasMoreItems = NO;
-            objectList.numItems = (int)objectsArray.count;
+            objectList.numItems = (int)[allObjects count];
+            objectsArray = allObjects;
         } else { // is NSDictionary
             if (isQueryResult) {
                 objectsArray = [jsonDictionary cmis_objectForKeyNotNull:kCMISBrowserJSONResults];

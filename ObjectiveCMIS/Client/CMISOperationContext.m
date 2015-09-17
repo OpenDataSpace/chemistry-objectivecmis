@@ -35,6 +35,8 @@
     defaultContext.includePathSegments = NO;
     defaultContext.maxItemsPerPage = 100;
     defaultContext.skipCount = 0;
+    defaultContext.depth = 1;
+    
     return defaultContext;
 }
 

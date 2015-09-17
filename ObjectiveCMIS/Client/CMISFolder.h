@@ -55,6 +55,14 @@
 - (CMISRequest*)retrieveChildrenWithOperationContext:(CMISOperationContext *)operationContext completionBlock:(void (^)(CMISPagedResult *result, NSError *error))completionBlock;
 
 /**
+ * Retrieves the descendants of this folder as a paged result using the provided operation context.
+ *
+ * The completionBlock will return paged results with instances of CMISObject or nil if unsuccessful.
+ */
+- (CMISRequest*)retrieveDescendantsWithOperationContext:(CMISOperationContext *)operationContext
+                                       completionBlock:(void (^)(CMISPagedResult *result, NSError *error))completionBlock;
+
+/**
  * creates a folder with specified properties
  * completionBlock returns object Id of newly created folder or nil if not successful
  */
