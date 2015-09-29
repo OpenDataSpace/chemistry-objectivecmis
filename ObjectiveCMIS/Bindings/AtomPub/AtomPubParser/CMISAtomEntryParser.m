@@ -22,7 +22,7 @@
 #import "CMISRenditionData.h"
 #import "CMISAtomPubParserUtil.h"
 
-@interface CMISAtomEntryParser ()
+@interface CMISAtomEntryParser () <CMISAtomEntryParserDelegate>
 
 @property (nonatomic, strong, readwrite) CMISObjectData *objectData;
 
@@ -44,6 +44,8 @@
 @property (nonatomic, weak) id<NSXMLParserDelegate, CMISAtomEntryParserDelegate> parentDelegate;
 @property (nonatomic, strong) NSDictionary *entryAttributesDict;
 
+@property (nonatomic, strong) NSMutableArray    *childrenEntry;
+
 // Designated initializer
 - (id)init;
 // Initializer used if this parser is a delegated child parser
@@ -62,6 +64,7 @@
     if (self) {
         self.currentLinkRelations = [NSMutableSet set];
         self.parsingRelationship = NO;
+        self.childrenEntry = nil;
     }
     return self;
 }
@@ -178,6 +181,12 @@
             [self.currentLinkRelations addObject:link];
         } else if ([elementName isEqualToString:kCMISAtomEntryContent]) {
             self.objectData.contentUrl = [NSURL URLWithString:[attributeDict objectForKey:kCMISAtomEntrySrc]];
+        } else if (self.parentDelegate && [elementName isEqualToString:kCMISAtomEntry]) {  //new entry
+            if (!self.childrenEntry) {
+                self.childrenEntry = [NSMutableArray array];
+            }
+            
+            self.childParserDelegate = [CMISAtomEntryParser atomEntryParserWithAtomEntryAttributes:attributeDict parentDelegate:self parser:parser];
         }
     } else if ([namespaceURI isEqualToString:kCMISNamespaceApp]) {
         // Nothing to do in this namespace
@@ -352,6 +361,13 @@
                     // Message the parent delegate the parsed ObjectData
                     [self.parentDelegate performSelector:@selector(cmisAtomEntryParser:didFinishParsingCMISObjectData:)
                                               withObject:self withObject:self.objectData];
+                    
+                    if (self.childrenEntry) { //has children entry
+                        for (id object in self.childrenEntry) {
+                            [self.parentDelegate performSelector:@selector(cmisAtomEntryParser:didFinishParsingCMISObjectData:)
+                                                      withObject:self withObject:object];
+                        }
+                    }
                 }
 
                 // Resetting our parent as the delegate since we're done
@@ -380,6 +396,14 @@
 -(void)aclParser:(CMISAtomPubAclParser *)aclParser didFinishParsingAcl:(CMISAcl *)acl{
     self.objectData.acl = acl;
     [self.objectData.acl setIsExact:self.isExcatAcl];
+}
+
+#pragma mark -
+#pragma mark CMISAtomEntryParserDelegate Methods
+
+- (void)cmisAtomEntryParser:(CMISAtomEntryParser *)entryParser didFinishParsingCMISObjectData:(CMISObjectData *)cmisObjectData
+{
+    [self.childrenEntry addObject:cmisObjectData];
 }
 
 @end
