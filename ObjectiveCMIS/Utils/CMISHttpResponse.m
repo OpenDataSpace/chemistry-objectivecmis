@@ -38,6 +38,7 @@
     httpResponse.statusCode = httpUrlResponse.statusCode;
     httpResponse.data = data;
     httpResponse.statusCodeMessage = [NSHTTPURLResponse localizedStringForStatusCode:[httpUrlResponse statusCode]];
+    httpResponse.responseHeaders = httpUrlResponse.allHeaderFields;
     return httpResponse;
 }
 
@@ -50,6 +51,7 @@
     httpResponse.statusCode = statusCode;
     httpResponse.statusCodeMessage = message;
     httpResponse.data = data;
+    httpResponse.responseHeaders = headers;
     return httpResponse;
 }
 

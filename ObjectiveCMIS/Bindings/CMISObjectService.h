@@ -263,4 +263,17 @@
                                    sourceFolderId:(NSString*) sourceFolderId
                                   completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock;
 
+
+/**
+ * Append content to a document, used for upload file.
+ * completionBlock returns NSError nil if successful
+ */
+- (CMISRequest*)appendContentToDocument:(CMISStringInOutParameter*) objectIdParam
+                            changeToken:(CMISStringInOutParameter*) changeTokenParam
+                               filename:(NSString*) filename
+                               mimeType:(NSString*) mimeType
+                            contentData:(NSData*) contentData
+                            isLastChunk:(BOOL) isLastChunk
+                        completionBlock:(void (^)(NSString *contentLocation, NSError *error))completionBlock;
+
 @end

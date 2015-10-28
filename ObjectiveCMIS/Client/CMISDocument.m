@@ -303,4 +303,15 @@
     } progressBlock:progressBlock];
 }
 
+- (CMISRequest*)appendContentToDocument:(NSData*) contentData
+                            isLastChunk:(BOOL) isLastChunk
+                        completionBlock:(void (^)(NSString *contentLocation, NSError *error))completionBlock {
+    return [self.binding.objectService appendContentToDocument:[CMISStringInOutParameter inOutParameterUsingInParameter:self.identifier]
+                                                   changeToken:[CMISStringInOutParameter inOutParameterUsingInParameter:self.changeToken]
+                                                      filename:self.name
+                                                      mimeType:self.contentStreamMediaType
+                                                   contentData:contentData
+                                                   isLastChunk:isLastChunk
+                                               completionBlock:completionBlock];
+}
 @end

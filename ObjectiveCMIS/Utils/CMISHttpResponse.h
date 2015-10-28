@@ -24,6 +24,7 @@
 @property NSInteger statusCode;
 @property (nonatomic, strong) NSString *statusCodeMessage;
 @property (nonatomic, strong, readonly) NSData *data;
+@property (nonatomic, strong) NSDictionary *responseHeaders;
 
 /// wrapper for returned NSHTTPURLResponse and retrieved data
 + (CMISHttpResponse *)responseUsingURLHTTPResponse:(NSHTTPURLResponse *)HTTPURLResponse

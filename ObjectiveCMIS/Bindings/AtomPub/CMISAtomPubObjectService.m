@@ -865,4 +865,86 @@
     return request;
 }
 
+/**
+ * Append content to a document, used for upload file.
+ * completionBlock returns NSError nil if successful
+ */
+- (CMISRequest*)appendContentToDocument:(CMISStringInOutParameter*) objectIdParam
+                            changeToken:(CMISStringInOutParameter*) changeTokenParam
+                               filename:(NSString*) filename
+                               mimeType:(NSString*) mimeType
+                            contentData:(NSData*) contentData
+                            isLastChunk:(BOOL) isLastChunk
+                        completionBlock:(void (^)(NSString *contentLocation, NSError *error))completionBlock {
+    // Validate params
+    if (objectIdParam == nil
+        || objectIdParam.inParameter == nil
+        || changeTokenParam == nil
+        || changeTokenParam.inParameter == nil) {
+        CMISLogError(@"Object id is nil or inParameter of objectId is nil");
+        completionBlock(nil, [[NSError alloc] init]); // TODO: properly init error (CmisInvalidArgumentException)
+        return nil;
+    }
+    
+    CMISRequest *request = [[CMISRequest alloc] init];
+    
+    // Get edit media link
+    [self loadLinkForObjectId:objectIdParam.inParameter
+                     relation:kCMISLinkEditMedia
+                  cmisRequest:request
+              completionBlock:^(NSString *editMediaLink, NSError *error) {
+                  if (editMediaLink == nil){
+                      CMISLogError(@"Could not retrieve %@ link for object '%@'", kCMISLinkEditMedia, objectIdParam.inParameter);
+                      if (completionBlock) {
+                          completionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeObjectNotFound]);
+                      }
+                      return;
+                  }
+                  // Always set append flag to be true
+                  editMediaLink = [CMISURLUtil urlStringByAppendingParameter:@"append"
+                                                                       value:@"true" urlString:editMediaLink];
+                  
+                  // Append optional change token parameters
+                  if (changeTokenParam != nil && changeTokenParam.inParameter != nil) {
+                      editMediaLink = [CMISURLUtil urlStringByAppendingParameter:kCMISParameterChangeToken
+                                                                           value:changeTokenParam.inParameter urlString:editMediaLink];
+                  }
+                  
+                  // Append isLastChunk flag
+                  editMediaLink = [CMISURLUtil urlStringByAppendingParameter:@"isLastChunk"
+                                                                       value:(isLastChunk ? @"true" : @"false") urlString:editMediaLink];
+                  
+                  // Execute HTTP call on edit media link, passing the a stream to the file
+                  //TODO: Have to set disposition to be "@"attachment;filename*=UTF-8''%@""?
+                  NSArray *values =  @[[NSString stringWithFormat:kCMISHTTPHeaderContentDispositionAttachment, filename], mimeType, @"chunked"];
+                  NSArray *keys = @[kCMISHTTPHeaderContentDisposition, kCMISHTTPHeaderContentType, @"Transfer-Encoding"];
+                  
+                  NSDictionary *headers = [NSDictionary dictionaryWithObjects:values forKeys:keys];
+                  
+                  [self.bindingSession.networkProvider invoke:[NSURL URLWithString:editMediaLink]
+                                                   httpMethod:HTTP_PUT
+                                                      session:self.bindingSession
+                                                         body:contentData
+                                                      headers:headers
+                                                  cmisRequest:request
+                                              completionBlock:^(CMISHttpResponse *httpResponse, NSError *error) {
+                                                  NSString *contentLocation = nil;
+                                                  // Check response status
+                                                  if (httpResponse) {
+                                                      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201 || httpResponse.statusCode == 204) {
+                                                          error = nil;
+                                                          contentLocation = [httpResponse.responseHeaders objectForKey:@"Location"];
+                                                      } else {
+                                                          CMISLogError(@"Invalid http response status code when updating content: %d", (int)httpResponse.statusCode);
+                                                          error = [CMISErrors createCMISErrorWithCode:kCMISErrorCodeRuntime
+                                                                                  detailedDescription:[NSString stringWithFormat:@"Could not update content: http status code %li", (long)httpResponse.statusCode]];
+                                                      }
+                                                  }
+                                                  if (completionBlock) {
+                                                      completionBlock(contentLocation, error);
+                                                  }
+                                              }];
+              }];
+    return request;
+}
 @end

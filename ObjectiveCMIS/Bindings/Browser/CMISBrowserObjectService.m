@@ -817,4 +817,68 @@
     return cmisRequest;
 }
 
+/**
+ * Append content to a document, used for upload file.
+ * completionBlock returns NSError nil if successful
+ */
+- (CMISRequest*)appendContentToDocument:(CMISStringInOutParameter*) objectIdParam
+                            changeToken:(CMISStringInOutParameter*) changeTokenParam
+                               filename:(NSString*) filename
+                               mimeType:(NSString*) mimeType
+                            contentData:(NSData*) contentData
+                            isLastChunk:(BOOL) isLastChunk
+                        completionBlock:(void (^)(NSString *contentLocation, NSError *error))completionBlock {
+    // Validate params
+    if (objectIdParam == nil
+        || objectIdParam.inParameter == nil
+        || changeTokenParam == nil
+        || changeTokenParam.inParameter == nil) {
+        completionBlock(nil, [CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument
+                                             detailedDescription:@"Object id must be set!"]);
+    }
+    
+    // build URL
+    NSString *objectUrl = [self retrieveObjectUrlForObjectWithId:objectIdParam.inParameter];
+    
+    NSInputStream* inputStream = [[NSInputStream alloc] initWithData:contentData];
+    // prepare form data
+    CMISBroswerFormDataWriter *formData = [[CMISBroswerFormDataWriter alloc] initWithAction:kCMISBrowserJSONActionAppendContent contentStream:inputStream mediaType:mimeType];
+    [formData setFileName:filename];
+    [formData addParameter:@"append" boolValue:true];
+    [formData addParameter:@"isLastChunk" boolValue:isLastChunk];
+    [formData addParameter:kCMISParameterChangeToken value:changeTokenParam.inParameter];
+    [formData addSuccinctFlag:true];
+    
+    NSArray *values =  @[[NSString stringWithFormat:@"attachment; filename=%@", filename], mimeType, @"chunked"];
+    NSArray *keys = @[@"Content-Disposition", @"Content-Type", @"Transfer-Encoding"];
+    
+    NSDictionary *headers = [NSDictionary dictionaryWithObjects:values forKeys:keys];
+    
+    CMISRequest *cmisRequest = [[CMISRequest alloc] init];
+    NSMutableDictionary *appendHeaders = [NSMutableDictionary dictionaryWithDictionary:headers];
+    [appendHeaders addEntriesFromDictionary:formData.headers];
+    
+    // send
+    [self.bindingSession.networkProvider invoke:[NSURL URLWithString:objectUrl]
+                                     httpMethod:HTTP_POST
+                                        session:self.bindingSession
+                                    inputStream:inputStream
+                                        headers:appendHeaders
+                                  bytesExpected:[contentData length]
+                                    cmisRequest:cmisRequest
+                                      startData:formData.startData
+                                        endData:formData.endData
+                              useBase64Encoding:NO
+                                completionBlock:^(CMISHttpResponse *httpResponse, NSError *error) {
+                                    NSString *contentLocation = nil;
+                                    if ((httpResponse.statusCode == 200 || httpResponse.statusCode == 201) && httpResponse.data) {
+                                        contentLocation = [httpResponse.responseHeaders objectForKey:@"Location"];
+                                    }
+                                    
+                                    completionBlock(contentLocation, error);
+                                }progressBlock:nil
+     ];
+    return cmisRequest;
+}
+
 @end

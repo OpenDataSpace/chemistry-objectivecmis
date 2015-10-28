@@ -176,4 +176,11 @@
                       completionBlock:(void (^)(CMISDocument *document, NSError *error))completionBlock
                         progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock;
 
+/**
+ * Append content data to document
+ */
+- (CMISRequest*)appendContentToDocument:(NSData*) contentData
+                            isLastChunk:(BOOL) isLastChunk
+                        completionBlock:(void (^)(NSString *contentLocation, NSError *error))completionBlock;
+
 @end
