@@ -124,4 +124,21 @@
         completionBlock:(void (^)(CMISObjectData *objectData, NSError *error))completionBlock
           progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock;
 
+/**
+ * Checks-in the private working copy (PWC) document without input stream.
+ *
+ * @param objectId the identifier for the PWC
+ * @param asMajorVersion indicator if the new version should become a major (YES) or minor (NO) version
+ * @param mimeType (optional) Mime type of the content to be uploaded
+ * @param properties (optional) the property values that must be applied to the checked-in document object
+ * @param checkinComment (optional) a version comment
+ * @param completionBlock returns object data or nil
+ */
+- (CMISRequest*)checkIn:(NSString *)objectId
+         asMajorVersion:(BOOL)asMajorVersion
+               mimeType:(NSString *)mimeType
+             properties:(CMISProperties *)properties
+         checkinComment:(NSString *)checkinComment
+        completionBlock:(void (^)(CMISObjectData *objectData, NSError *error))completionBlock;
+
 @end

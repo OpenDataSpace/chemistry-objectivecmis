@@ -225,7 +225,8 @@
     // Validate object id param
     if (objectIdParam == nil || objectIdParam.inParameter == nil) {
         CMISLogError(@"Object id is nil or inParameter of objectId is nil");
-        completionBlock([[NSError alloc] init]); // TODO: properly init error (CmisInvalidArgumentException)
+        completionBlock([CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument
+                                             detailedDescription:@"Object id must be set!"]);
         return nil;
     }
     
@@ -424,6 +425,7 @@
                                     properties:properties
                                       inFolder:folderObjectId
                                  bytesExpected:bytesExpected
+                               versioningState:nil
                                completionBlock:completionBlock
                                  progressBlock:progressBlock];
 }
@@ -433,6 +435,7 @@
                                    properties:(CMISProperties *)properties
                                      inFolder:(NSString *)folderObjectId
                                 bytesExpected:(unsigned long long)bytesExpected // optional
+                              versioningState:(NSString*) versioningState
                               completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock
                                 progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock
 {
@@ -467,6 +470,11 @@
                                   completionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeObjectNotFound]);
                               }
                           } else {
+                              if (versioningState) {
+                                  downLink = [CMISURLUtil urlStringByAppendingParameter:kCMISParameterVersioningState
+                                                                                  value:versioningState urlString:downLink];
+                              }
+                              
                               [self sendAtomEntryXmlToLink:downLink
                                          httpRequestMethod:HTTP_POST
                                                 properties:properties
@@ -717,7 +725,8 @@
     // Validate params
     if (objectIdParam == nil || objectIdParam.inParameter == nil) {
         CMISLogError(@"Object id is nil or inParameter of objectId is nil");
-        completionBlock([[NSError alloc] init]); // TODO: properly init error (CmisInvalidArgumentException)
+        completionBlock([CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument
+                                             detailedDescription:@"Object id must be set!"]);
         return nil;
     }
     
@@ -882,7 +891,8 @@
         || changeTokenParam == nil
         || changeTokenParam.inParameter == nil) {
         CMISLogError(@"Object id is nil or inParameter of objectId is nil");
-        completionBlock(nil, [[NSError alloc] init]); // TODO: properly init error (CmisInvalidArgumentException)
+        completionBlock(nil, [CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument
+                                             detailedDescription:@"Object id or change token must be set!"]);
         return nil;
     }
     

@@ -246,7 +246,8 @@
                                                              mimeType:mimeType
                                                            properties:convertedProperties
                                                              inFolder:self.identifier
-                                                        bytesExpected:bytesExpected
+                                                         bytesExpected:bytesExpected
+                                                       versioningState:nil
                                                       completionBlock:completionBlock
                                                         progressBlock:progressBlock];
             

@@ -181,6 +181,7 @@
                                    properties:(CMISProperties *)properties
                                      inFolder:(NSString *)folderObjectId
                                 bytesExpected:(unsigned long long)bytesExpected // optional
+                              versioningState:(NSString*) versioningState
                               completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock
                                 progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock;
 

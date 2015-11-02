@@ -328,4 +328,52 @@
     return cmisRequest;
 }
 
+- (CMISRequest*)checkIn:(NSString *)objectId
+         asMajorVersion:(BOOL)asMajorVersion
+               mimeType:(NSString *)mimeType
+             properties:(CMISProperties *)properties
+         checkinComment:(NSString *)checkinComment
+        completionBlock:(void (^)(CMISObjectData *objectData, NSError *error))completionBlock {
+    // we need an object id
+    if ((objectId == nil) || (objectId.length == 0)) {
+        completionBlock(nil, [CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument
+                                             detailedDescription:@"Object id must be set!"]);
+    }
+    
+    // build URL
+    NSString *objectUrl = [self retrieveObjectUrlForObjectWithId:objectId];
+    
+    // prepare form data
+    CMISBroswerFormDataWriter *formData = [[CMISBroswerFormDataWriter alloc] initWithAction:kCMISBrowserJSONActionCheckIn contentStream:nil mediaType:mimeType];
+    [formData addParameter:kCMISParameterMajor boolValue:asMajorVersion];
+    [formData addPropertiesParameters:properties];
+    [formData addParameter:kCMISParameterCheckinComment value:checkinComment];
+    [formData addSuccinctFlag:true];
+    
+    
+    CMISRequest *cmisRequest = [[CMISRequest alloc] init];
+    
+    [self.bindingSession.networkProvider invokePOST:[NSURL URLWithString:objectUrl]
+                                            session:self.bindingSession
+                                               body:formData.body
+                                            headers:formData.headers
+                                        cmisRequest:cmisRequest
+                                    completionBlock:^(CMISHttpResponse *httpResponse, NSError *error){
+                                        if ((httpResponse.statusCode == 200 || httpResponse.statusCode == 201) && httpResponse.data) {
+                                            CMISBrowserTypeCache *typeCache = [[CMISBrowserTypeCache alloc] initWithRepositoryId:self.bindingSession.repositoryId bindingService:self];
+                                            [CMISBrowserUtil objectDataFromJSONData:httpResponse.data typeCache:typeCache completionBlock:^(CMISObjectData *objectData, NSError *error) {
+                                                if (error) {
+                                                    completionBlock(nil, error);
+                                                } else {
+                                                    completionBlock(objectData, nil);
+                                                }
+                                            }];
+                                        } else {
+                                            completionBlock(nil, error);
+                                        }
+                                    }];
+    
+    return cmisRequest;
+}
+
 @end

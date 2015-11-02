@@ -261,6 +261,52 @@
     return request;
 }
 
+- (CMISRequest*)checkIn:(NSString *)objectId
+         asMajorVersion:(BOOL)asMajorVersion
+               mimeType:(NSString *)mimeType
+             properties:(CMISProperties *)properties
+         checkinComment:(NSString *)checkinComment
+        completionBlock:(void (^)(CMISObjectData *objectData, NSError *error))completionBlock {
+    // we need an object id
+    if ((objectId == nil) || (objectId.length == 0)) {
+        completionBlock(nil, [CMISErrors createCMISErrorWithCode:kCMISErrorCodeInvalidArgument
+                                             detailedDescription:@"Object id must be set!"]);
+    }
+    
+    CMISRequest *request = [CMISRequest new];
+    
+    [self workingCopyLinkForObjectId:objectId completionBlock:^(NSString *workingCopyLink, NSError *error) {
+        
+        // add the necessary parameters to the URL
+        NSString *link = [CMISURLUtil urlStringByAppendingParameter:kCMISParameterCheckin value:kCMISParameterValueTrue urlString:workingCopyLink];
+        link = [CMISURLUtil urlStringByAppendingParameter:kCMISParameterMajor
+                                                    value:asMajorVersion ? kCMISParameterValueTrue : kCMISParameterValueFalse urlString:link];
+        if (checkinComment != nil)
+        {
+            link = [CMISURLUtil urlStringByAppendingParameter:kCMISParameterCheckinComment value:checkinComment urlString:link];
+        }
+        
+        // send an atom entry to have the file checked in
+        [self sendAtomEntryXmlToLink:link
+                   httpRequestMethod:HTTP_PUT
+                          properties:properties
+                  contentInputStream:nil
+                     contentMimeType:mimeType
+                       bytesExpected:0
+                         cmisRequest:request
+                     completionBlock:^(CMISObjectData *objectData, NSError *error) {
+                         if (error) {
+                             completionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeVersioning]);
+                         } else {
+                             completionBlock(objectData, nil);
+                         }
+                     }
+                       progressBlock:nil];
+    }];
+    
+    return request;
+}
+
 #pragma mark Internal methods
 
 - (CMISRequest *)workingCopyLinkForObjectId:(NSString *)objectId completionBlock:(void(^)(NSString *workingCopyLink, NSError *error))completionBlock

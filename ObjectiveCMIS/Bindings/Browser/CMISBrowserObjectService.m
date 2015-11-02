@@ -396,6 +396,7 @@
                                     properties:properties
                                       inFolder:folderObjectId
                                  bytesExpected:bytesExpected
+                               versioningState:nil
                                completionBlock:completionBlock
                                  progressBlock:progressBlock];
 }
@@ -405,6 +406,7 @@
                                    properties:(CMISProperties *)properties
                                      inFolder:(NSString *)folderObjectId
                                 bytesExpected:(unsigned long long)bytesExpected // optional
+                              versioningState:(NSString*) versioningState // optional
                               completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock
                                 progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock
 {
@@ -432,7 +434,10 @@
     // prepare form data
     CMISBroswerFormDataWriter *formData = [[CMISBroswerFormDataWriter alloc] initWithAction:kCMISBrowserJSONActionCreateDocument contentStream:inputStream mediaType:mimeType];
     [formData addPropertiesParameters:properties];
-    // TODO [formData addParameter:kCMISParameterVersioningState value:versioningState];
+    if (versioningState) {
+        [formData addParameter:kCMISParameterVersioningState value:versioningState];
+    }
+    
     // TODO [formData addPoliciesParameters:policies];
     // TODO [formData addAddAcesParameters:addAces];
     // TODO [formData addRemoveAcesParameters:removeAces];

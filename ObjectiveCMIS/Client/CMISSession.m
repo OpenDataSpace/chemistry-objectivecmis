@@ -676,6 +676,7 @@
                            properties:(NSDictionary *)properties
                              inFolder:(NSString *)folderObjectId
                         bytesExpected:(unsigned long long)bytesExpected
+                              versioningState:(NSString*) versioningState
                       completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock
                         progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock
 {
@@ -694,6 +695,7 @@
                                                            properties:convertedProperties
                                                              inFolder:folderObjectId
                                                         bytesExpected:bytesExpected
+                                                      versioningState:versioningState
                                                       completionBlock:completionBlock
                                                         progressBlock:progressBlock];
             // set the underlying request object on the object returned to the original caller

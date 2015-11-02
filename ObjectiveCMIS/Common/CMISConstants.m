@@ -148,6 +148,7 @@ NSString * const kCMISParameterValueFalse = @"false";
 NSString * const kCMISParameterValueReturnValueThis = @"this";
 NSString * const kCMISParameterValueReturnValueLatest = @"latest";
 NSString * const kCMISParameterValueReturnValueLatestMajor = @"latestmajor";
+NSString * const kCMISParameterValueCheckedOut = @"checkedout";
 
 // Common Media Types
 NSString * const kCMISMediaTypeOctetStream = @"application/octet-stream";

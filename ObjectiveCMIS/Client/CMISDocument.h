@@ -177,6 +177,15 @@
                         progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock;
 
 /**
+ * Checkin this PWC without input stream and return the checked-in document
+ */
+- (CMISRequest*)checkInWithoutStreamAsMajorVersion:(BOOL)majorVersion
+                                          mimeType:(NSString *)mimeType
+                                        properties:(CMISProperties *)properties
+                                    checkinComment:(NSString *)checkinComment
+                                   completionBlock:(void (^)(CMISDocument *document, NSError *error))completionBlock;
+
+/**
  * Append content data to document
  */
 - (CMISRequest*)appendContentToDocument:(NSData*) contentData

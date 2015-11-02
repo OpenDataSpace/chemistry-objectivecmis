@@ -303,6 +303,32 @@
     } progressBlock:progressBlock];
 }
 
+- (CMISRequest*)checkInWithoutStreamAsMajorVersion:(BOOL)majorVersion
+                                          mimeType:(NSString *)mimeType
+                                        properties:(CMISProperties *)properties
+                                    checkinComment:(NSString *)checkinComment
+                                   completionBlock:(void (^)(CMISDocument *document, NSError *error))completionBlock {
+    return [self.binding.versioningService checkIn:self.identifier
+                                    asMajorVersion:majorVersion
+                                          mimeType:mimeType
+                                        properties:properties
+                                    checkinComment:checkinComment
+                                   completionBlock:^(CMISObjectData *objectData, NSError *error) {
+                                       if (error) {
+                                           completionBlock(nil, [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeVersioning]);
+                                       } else {
+                                           // convert the object data to document object
+                                           [self.session.objectConverter convertObject:objectData completionBlock:^(CMISObject *object, NSError *error) {
+                                               if (error) {
+                                                   [CMISErrors cmisError:error cmisErrorCode:kCMISErrorCodeVersioning];
+                                               } else {
+                                                   completionBlock((CMISDocument*)object, nil);
+                                               }
+                                           }];
+                                       }
+                                   }];
+}
+
 - (CMISRequest*)appendContentToDocument:(NSData*) contentData
                             isLastChunk:(BOOL) isLastChunk
                         completionBlock:(void (^)(NSString *contentLocation, NSError *error))completionBlock {

@@ -273,7 +273,8 @@
                              mimeType:(NSString *)mimeType
                            properties:(NSDictionary *)properties
                              inFolder:(NSString *)folderObjectId
-                        bytesExpected:(unsigned long long)bytesExpected
+                                bytesExpected:(unsigned long long)bytesExpected
+                              versioningState:(NSString*) versioningState  //optional  default:none
                       completionBlock:(void (^)(NSString *objectId, NSError *error))completionBlock
                         progressBlock:(void (^)(unsigned long long bytesUploaded, unsigned long long bytesTotal))progressBlock;
 

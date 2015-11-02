@@ -137,6 +137,7 @@ extern NSString * const kCMISParameterValueFalse;
 extern NSString * const kCMISParameterValueReturnValueThis;
 extern NSString * const kCMISParameterValueReturnValueLatest;
 extern NSString * const kCMISParameterValueReturnValueLatestMajor;
+extern NSString * const kCMISParameterValueCheckedOut;
 
 // Common Media Types
 extern NSString * const kCMISMediaTypeOctetStream;
