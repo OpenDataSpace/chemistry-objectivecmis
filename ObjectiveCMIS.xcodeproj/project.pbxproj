@@ -2082,6 +2082,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "ObjectiveCMIS/ObjectiveCMIS-Prefix.pch";
 				INSTALL_PATH = /ObjectiveCMIS;
+				OTHER_CFLAGS = "-fembed-bitcode";
 				OTHER_LDFLAGS = "-ObjC";
 				PRIVATE_HEADERS_FOLDER_PATH = /ObjectiveCMIS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2099,6 +2100,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "ObjectiveCMIS/ObjectiveCMIS-Prefix.pch";
 				INSTALL_PATH = /ObjectiveCMIS;
+				OTHER_CFLAGS = "-fembed-bitcode";
 				OTHER_LDFLAGS = "-ObjC";
 				PRIVATE_HEADERS_FOLDER_PATH = /ObjectiveCMIS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
