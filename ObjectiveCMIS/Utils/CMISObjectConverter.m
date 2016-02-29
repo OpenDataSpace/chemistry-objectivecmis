@@ -53,6 +53,8 @@
         object = [[CMISDocument alloc] initWithObjectData:objectData session:self.session];
     } else if (objectData.baseType == CMISBaseTypeFolder) {
         object = [[CMISFolder alloc] initWithObjectData:objectData session:self.session];
+    } else {
+        object = [[CMISObject alloc] initWithObjectData:objectData session:self.session];
     }
     
     [object fetchTypeDefinitionWithCompletionBlock:^(NSError *error) {

@@ -484,11 +484,13 @@ NSString * const kCMISBrowserMaxValueECMJSONProperty = @"\"maxValue\":1797693134
     }
     
     // TODO other base types
-    if ([baseType isEqualToString:kCMISPropertyObjectTypeIdValueDocument]) {
-        objectData.baseType = CMISBaseTypeDocument;
-    } else if ([baseType isEqualToString:kCMISPropertyObjectTypeIdValueFolder]) {
-        objectData.baseType = CMISBaseTypeFolder;
-    }
+//    if ([baseType isEqualToString:kCMISPropertyObjectTypeIdValueDocument]) {
+//        objectData.baseType = CMISBaseTypeDocument;
+//    } else if ([baseType isEqualToString:kCMISPropertyObjectTypeIdValueFolder]) {
+//        objectData.baseType = CMISBaseTypeFolder;
+//    }
+    
+    objectData.baseType = [CMISEnums enumForBaseId:baseType];
     
     BOOL isExactAcl = [dictionary cmis_boolForKey:kCMISBrowserJSONIsExact];
     objectData.acl = [CMISBrowserUtil convertAcl:[dictionary cmis_objectForKeyNotNull:kCMISBrowserJSONAcl] isExactAcl:isExactAcl];
